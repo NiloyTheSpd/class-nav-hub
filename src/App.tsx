@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Navbar } from "@/components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
+import StudentProfile from "./pages/StudentProfile";
 import Sessions from "./pages/Sessions";
 import Calendar from "./pages/Calendar";
 import Reports from "./pages/Reports";
@@ -31,6 +32,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/students" element={<Students />} />
+                  <Route path="/students/:id" element={<StudentProfile />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/reports" element={<Reports />} />
