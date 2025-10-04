@@ -1,5 +1,5 @@
 import { PageContainer } from "@/components/PageContainer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,36 +22,42 @@ interface Report {
   attendance: number;
 }
 
-const mockReports: Report[] = [
-  { id: 1, date: "2025-01-15", student: "Emma Wilson", subject: "Mathematics", status: "Upcoming", attendance: 95 },
-  { id: 2, date: "2025-01-14", student: "Liam Johnson", subject: "Physics", status: "Completed", attendance: 88 },
-  { id: 3, date: "2025-01-13", student: "Sophia Brown", subject: "Chemistry", status: "Completed", attendance: 92 },
-  { id: 4, date: "2025-01-12", student: "Noah Davis", subject: "Biology", status: "Completed", attendance: 85 },
-  { id: 5, date: "2025-01-11", student: "Olivia Martinez", subject: "English", status: "Canceled", attendance: 0 },
-  { id: 6, date: "2025-01-10", student: "Ethan Anderson", subject: "History", status: "Completed", attendance: 90 },
-  { id: 7, date: "2025-01-09", student: "Ava Taylor", subject: "Mathematics", status: "Completed", attendance: 94 },
-  { id: 8, date: "2025-01-16", student: "James Thomas", subject: "Physics", status: "Upcoming", attendance: 0 },
-  { id: 9, date: "2025-01-08", student: "Isabella Lee", subject: "Chemistry", status: "Completed", attendance: 87 },
-  { id: 10, date: "2025-01-07", student: "Michael White", subject: "Biology", status: "Canceled", attendance: 0 },
-  { id: 11, date: "2025-01-17", student: "Emma Wilson", subject: "English", status: "Upcoming", attendance: 0 },
-  { id: 12, date: "2025-01-06", student: "Sophia Brown", subject: "History", status: "Completed", attendance: 91 },
-];
-
 const Reports = () => {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [studentFilter, setStudentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch("/api/reports");
+        if (!response.ok) {
+          throw new Error("Failed to fetch reports");
+        }
+        const data = await response.json();
+        setReports(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
 
   const itemsPerPage = 5;
 
   // Get unique students for filter
-  const uniqueStudents = Array.from(new Set(mockReports.map((r) => r.student)));
+  const uniqueStudents = Array.from(new Set(reports.map((r) => r.student)));
 
-  const filteredReports = mockReports.filter((report) => {
+  const filteredReports = reports.filter((report) => {
     if (studentFilter !== "all" && report.student !== studentFilter) return false;
     if (statusFilter !== "all" && report.status !== statusFilter) return false;
     if (dateFrom && report.date < dateFrom) return false;
@@ -96,6 +102,16 @@ const Reports = () => {
         <div className="space-y-4">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer title="Reports">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-red-500">{error}</p>
         </div>
       </PageContainer>
     );

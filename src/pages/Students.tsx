@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
 import { Input } from "@/components/ui/input";
@@ -13,21 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-
-const mockStudents = [
-  { id: 1, name: "Emma Wilson", grade: "10th Grade", attendance: 98, sessions: 24 },
-  { id: 2, name: "Liam Johnson", grade: "9th Grade", attendance: 95, sessions: 22 },
-  { id: 3, name: "Olivia Davis", grade: "11th Grade", attendance: 92, sessions: 28 },
-  { id: 4, name: "Noah Martinez", grade: "10th Grade", attendance: 88, sessions: 20 },
-  { id: 5, name: "Ava Anderson", grade: "12th Grade", attendance: 96, sessions: 30 },
-  { id: 6, name: "Ethan Brown", grade: "9th Grade", attendance: 72, sessions: 18 },
-  { id: 7, name: "Sophia Taylor", grade: "11th Grade", attendance: 89, sessions: 26 },
-  { id: 8, name: "Mason Thomas", grade: "10th Grade", attendance: 94, sessions: 25 },
-  { id: 9, name: "Isabella Moore", grade: "12th Grade", attendance: 91, sessions: 29 },
-  { id: 10, name: "Lucas White", grade: "9th Grade", attendance: 68, sessions: 16 },
-  { id: 11, name: "Mia Harris", grade: "11th Grade", attendance: 97, sessions: 27 },
-  { id: 12, name: "James Clark", grade: "10th Grade", attendance: 85, sessions: 23 },
-];
 
 const ITEMS_PER_PAGE = 5;
 
@@ -49,13 +34,34 @@ const getAttendanceBadge = (attendance: number) => {
 
 const Students = () => {
   const navigate = useNavigate();
+  const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch("/api/students");
+        if (!response.ok) {
+          throw new Error("Failed to fetch students");
+        }
+        const data = await response.json();
+        setStudents(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   const filteredStudents = useMemo(() => {
-    return mockStudents.filter((student) => {
+    return students.filter((student) => {
       const matchesSearch = student.name
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
@@ -63,7 +69,7 @@ const Students = () => {
         gradeFilter === "all" || student.grade === gradeFilter;
       return matchesSearch && matchesGrade;
     });
-  }, [searchQuery, gradeFilter]);
+  }, [students, searchQuery, gradeFilter]);
 
   const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -86,6 +92,16 @@ const Students = () => {
       <PageContainer title="Students">
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground">Loading students...</p>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer title="Students">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-red-500">{error}</p>
         </div>
       </PageContainer>
     );

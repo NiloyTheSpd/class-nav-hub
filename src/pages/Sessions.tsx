@@ -1,5 +1,5 @@
 import { PageContainer } from "@/components/PageContainer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,29 +20,37 @@ interface Session {
   status: SessionStatus;
 }
 
-const mockSessions: Session[] = [
-  { id: 1, date: "2025-01-15", subject: "Mathematics", student: "Emma Wilson", status: "Upcoming" },
-  { id: 2, date: "2025-01-14", subject: "Physics", student: "Liam Johnson", status: "Upcoming" },
-  { id: 3, date: "2025-01-13", subject: "Chemistry", student: "Sophia Brown", status: "Completed" },
-  { id: 4, date: "2025-01-12", subject: "Biology", student: "Noah Davis", status: "Completed" },
-  { id: 5, date: "2025-01-11", subject: "English", student: "Olivia Martinez", status: "Canceled" },
-  { id: 6, date: "2025-01-10", subject: "History", student: "Ethan Anderson", status: "Completed" },
-  { id: 7, date: "2025-01-09", subject: "Mathematics", student: "Ava Taylor", status: "Completed" },
-  { id: 8, date: "2025-01-16", subject: "Physics", student: "James Thomas", status: "Upcoming" },
-  { id: 9, date: "2025-01-08", subject: "Chemistry", student: "Isabella Lee", status: "Completed" },
-  { id: 10, date: "2025-01-07", subject: "Biology", student: "Michael White", status: "Canceled" },
-];
-
 const Sessions = () => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await fetch("/api/sessions");
+        if (!response.ok) {
+          throw new Error("Failed to fetch sessions");
+        }
+        const data = await response.json();
+        setSessions(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, []);
 
   const itemsPerPage = 5;
 
-  const filteredSessions = mockSessions.filter((session) => {
+  const filteredSessions = sessions.filter((session) => {
     if (statusFilter !== "all" && session.status !== statusFilter) return false;
     if (dateFrom && session.date < dateFrom) return false;
     if (dateTo && session.date > dateTo) return false;
@@ -93,6 +101,16 @@ const Sessions = () => {
         <div className="space-y-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-64 w-full" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer title="Sessions">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-red-500">{error}</p>
         </div>
       </PageContainer>
     );

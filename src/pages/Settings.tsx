@@ -1,5 +1,5 @@
 import { PageContainer } from "@/components/PageContainer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -10,37 +10,86 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { User, Moon, Sun, Globe, Accessibility, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@clerk/clerk-react";
 
 const Settings = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState("english");
-  const [highContrast, setHighContrast] = useState(false);
-  const [largerText, setLargerText] = useState(false);
-  const [screenReader, setScreenReader] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [sessionReminders, setSessionReminders] = useState(true);
+  const { user } = useUser();
+  const [settings, setSettings] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { toast } = useToast();
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch(`/api/settings?userId=${user.id}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch settings");
+        }
+        const data = await response.json();
+        setSettings(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [user]);
+
+  const handleSaveSettings = async () => {
+    if (!user) return;
+    try {
+      const response = await fetch(`/api/settings?userId=${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save settings");
+      }
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleResetSettings = () => {
-    setDarkMode(false);
-    setLanguage("english");
-    setHighContrast(false);
-    setLargerText(false);
-    setScreenReader(false);
-    setEmailNotifications(true);
-    setSessionReminders(true);
+    // This should ideally reset to default settings from the backend
+    // For now, we'll just reset the local state
+    setSettings({
+      darkMode: false,
+      language: "english",
+      highContrast: false,
+      largerText: false,
+      screenReader: false,
+      emailNotifications: true,
+      sessionReminders: true,
+    });
     toast({
       title: "Settings Reset",
       description: "All settings have been reset to default values.",
     });
   };
+
+  if (isLoading) {
+    return <PageContainer title="Settings">Loading...</PageContainer>;
+  }
+
+  if (error) {
+    return <PageContainer title="Settings">{error}</PageContainer>;
+  }
 
   return (
     <PageContainer title="Settings">
@@ -59,12 +108,12 @@ const Settings = () => {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src="" alt="Profile" />
-                  <AvatarFallback className="text-2xl">JD</AvatarFallback>
+                  <AvatarImage src={user?.imageUrl} alt="Profile" />
+                  <AvatarFallback className="text-2xl">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold text-lg">John Doe</h3>
-                  <p className="text-sm text-muted-foreground">john.doe@example.com</p>
+                  <h3 className="font-semibold text-lg">{user?.firstName} {user?.lastName}</h3>
+                  <p className="text-sm text-muted-foreground">{user?.primaryEmailAddress.emailAddress}</p>
                 </div>
               </div>
               <Separator />
@@ -83,7 +132,7 @@ const Settings = () => {
           <Card className="animate-fade-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                {settings?.darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                 Theme & Appearance
               </CardTitle>
               <CardDescription>Customize the look and feel</CardDescription>
@@ -98,8 +147,8 @@ const Settings = () => {
                 </div>
                 <Switch
                   id="dark-mode"
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  checked={settings?.darkMode}
+                  onCheckedChange={(checked) => setSettings({ ...settings, darkMode: checked })}
                 />
               </div>
               <Separator />
@@ -107,7 +156,7 @@ const Settings = () => {
                 <Label>Theme Preview</Label>
                 <div
                   className={`p-6 rounded-lg border transition-colors ${
-                    darkMode
+                    settings?.darkMode
                       ? "bg-slate-900 border-slate-700 text-slate-100"
                       : "bg-slate-50 border-slate-200 text-slate-900"
                   }`}
@@ -133,7 +182,7 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="language">Display Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
+                <Select value={settings?.language} onValueChange={(value) => setSettings({ ...settings, language: value }) }>
                   <SelectTrigger id="language">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
@@ -166,8 +215,8 @@ const Settings = () => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="high-contrast"
-                  checked={highContrast}
-                  onCheckedChange={(checked) => setHighContrast(checked as boolean)}
+                  checked={settings?.highContrast}
+                  onCheckedChange={(checked) => setSettings({ ...settings, highContrast: checked as boolean })}
                 />
                 <div className="space-y-0.5">
                   <Label htmlFor="high-contrast" className="cursor-pointer">
@@ -182,8 +231,8 @@ const Settings = () => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="larger-text"
-                  checked={largerText}
-                  onCheckedChange={(checked) => setLargerText(checked as boolean)}
+                  checked={settings?.largerText}
+                  onCheckedChange={(checked) => setSettings({ ...settings, largerText: checked as boolean })}
                 />
                 <div className="space-y-0.5">
                   <Label htmlFor="larger-text" className="cursor-pointer">
@@ -198,8 +247,8 @@ const Settings = () => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="screen-reader"
-                  checked={screenReader}
-                  onCheckedChange={(checked) => setScreenReader(checked as boolean)}
+                  checked={settings?.screenReader}
+                  onCheckedChange={(checked) => setSettings({ ...settings, screenReader: checked as boolean })}
                 />
                 <div className="space-y-0.5">
                   <Label htmlFor="screen-reader" className="cursor-pointer">
@@ -233,8 +282,8 @@ const Settings = () => {
                   </div>
                   <Switch
                     id="email-notifications"
-                    checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    checked={settings?.emailNotifications}
+                    onCheckedChange={(checked) => setSettings({ ...settings, emailNotifications: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -246,8 +295,8 @@ const Settings = () => {
                   </div>
                   <Switch
                     id="session-reminders"
-                    checked={sessionReminders}
-                    onCheckedChange={setSessionReminders}
+                    checked={settings?.sessionReminders}
+                    onCheckedChange={(checked) => setSettings({ ...settings, sessionReminders: checked })}
                   />
                 </div>
               </div>
