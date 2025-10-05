@@ -4,6 +4,50 @@
 
 **URL**: https://lovable.dev/projects/6f8d60c2-a240-4d53-b0ab-9cfbac3b28d1
 
+## Running the Application
+
+This project consists of a frontend (React/Vite) and a backend (Express/Prisma/PostgreSQL).
+
+### Frontend Setup
+
+```sh
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+The frontend will run on http://localhost:8080
+
+### Backend Setup
+
+See [backend/README.md](./backend/README.md) for detailed backend setup instructions.
+
+Quick start:
+```sh
+cd backend
+
+# Install dependencies
+npm install
+
+# Set up environment variables (see backend/.env.example)
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Set up database
+npx prisma generate
+npx prisma db push
+
+# Seed with sample data (optional)
+npm run seed
+
+# Start the backend server
+npm run dev
+```
+
+The backend will run on http://localhost:3001
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
