@@ -32,6 +32,9 @@ npx prisma migrate dev
 
 # Or push schema to database
 npx prisma db push
+
+# Seed the database with sample data (optional)
+npm run seed
 ```
 
 ## Running the Server
