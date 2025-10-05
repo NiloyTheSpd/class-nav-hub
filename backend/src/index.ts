@@ -36,7 +36,7 @@ app.get('/students', async (req, res) => {
     });
     
     // Transform data to match frontend expectations
-    const transformedStudents = students.map(student => ({
+    const transformedStudents = students.map((student: any) => ({
       id: student.id,
       name: student.user.firstName && student.user.lastName 
         ? `${student.user.firstName} ${student.user.lastName}`
@@ -116,7 +116,7 @@ app.get('/tutors', async (req, res) => {
     });
     
     // Transform data to match frontend expectations
-    const transformedTutors = tutors.map(tutor => ({
+    const transformedTutors = tutors.map((tutor: any) => ({
       id: tutor.id,
       name: tutor.user.firstName && tutor.user.lastName 
         ? `${tutor.user.firstName} ${tutor.user.lastName}`
@@ -203,7 +203,7 @@ app.get('/sessions', async (req, res) => {
     });
     
     // Transform data to match frontend expectations
-    const transformedSessions = sessions.map(session => ({
+    const transformedSessions = sessions.map((session: any) => ({
       id: session.id,
       title: session.title,
       description: session.description,
